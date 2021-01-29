@@ -1,0 +1,29 @@
+set title
+syntax on
+filetype on " to get filetype working below
+set tabstop=4 " number of columns per tab
+set expandtab " replace tab char with spaces
+set shiftwidth=4 " number of columns in indent operations (<< and >>)
+set softtabstop=2 " allows for backspace to eat four spaces!
+set autoindent " autoindent!
+
+set showcmd
+set showmatch
+
+set colorcolumn=80
+set number
+
+inoremap jj <Esc>
+
+au BufNewFile,BufRead *.hql set filetype=sql
+au BufNewFile,BufRead *.txt set textwidth=79
+au BufNewFile,BufRead *.pyx set filetype=python
+
+autocmd filetype sql setlocal ts=2 sw=2 sts=2
+autocmd filetype html setlocal ts=2 sw=2 sts=2
+autocmd filetype js setlocal ts=2 sw=2 sts=2
+autocmd filetype python setlocal ts=4 sw=4 sts=4
+
+" settings for converting html to js
+vmap <silent> ;h :s?^\(\s*\)+ '\([^']\+\)',*\s*$?\1\2?g<CR>
+vmap <silent> ;q :s?^\(\s*\)\(.*\)\s*$? \1 + '\2'?<CR>

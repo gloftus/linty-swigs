@@ -1,0 +1,601 @@
+#+TITLE: install.org
+#+AUTHOR: Gregory Loftus
+#+DATE: [2019-11-04 Mon]
+
+
+Installation scripts for basic linux dev environment.
+
+* how to use this file
+
+In theory you could tangle this file to create a shell file
+that installs everything you need for a new system.
+
+In practice you are probably going to run the code snippets in piecemeal.
+
+Could you create a hydra that walks you through the installation process?
+How to capture information about operating system in use?
+How to generate a record of what has been installed?
+
+* initial boot
+** set up environment
+
+create the directory structure YOU want!
+
+*** XDG directories
+
+    (1) Change names of XDG directories in ~/.config/user-dirs.dirs
+        But if you delete a directory in ~ it comes back on login
+
+        Can also use /etc/xdg/user-dirs.defaults
+
+    (2) edit /etc/xdg/user-dirs.conf to enabled=False
+        now directories are no longer created on login
+
+    (3) sudo apt-get remove xdg-user-dirs lubuntu-desktop
+        nuclear option, really necessary?
+
+    (?) in lxsession configuration, turn off user folders update!
+
+*** How can I change my home directories?
+
+write a script to change all your desktop environment directories
+don't forget bin directory and pgm directory
+firefox not causing problems yet
+
+#+begin_src shell
+cd ~
+mkdir -p bin
+mkdir -p d8a
+mkdir -p dev
+mkdir -p dld
+mkdir -p doc/org
+mkdir -p doc/sys
+mkdir -p med/img
+mkdir -p med/mus
+mkdir -p opt
+#+end_src
+
+** package install image
+
+#+BEGIN_SRC sh
+mkdir ~/doc/sys/dpkg
+dpkg -l > ~/doc/sys/dpkg/dpkg-00
+#+END_SRC
+
+** update and upgrade
+
+#+BEGIN_SRC sh
+sudo apt-get update
+sudo apt-get upgrade
+#+END_SRC
+
+** system information
+
+Collect this information and push it into the install.sh script header (?)
+
+*** What Linux do I have?
+
+#+begin_src shell
+lsb_release -a
+uname -a
+#+end_src
+
+*** What Desktop Environment am I running?
+
+#+begin_src shell
+echo $XDG_CURRENT_DESKTOP
+echo $DESKTOP_SESSION
+
+ls /usr/bin/*session
+ls /usr/share/xsessions/
+
+ps -e | grep -E -i "xfce|kde|gnome|panel|light"
+#+end_src
+
+*** dpkg-01
+
+I like to take snapshots of dpkg...
+
+#+BEGIN_SRC sh
+dpkg -l > ~/doc/sys/dpkg/dpkg-01
+#+END_SRC
+
+** git
+
+You must already have git installed before cloning this repo from github!
+
+It may have come pre-installed on your machine.
+Or you may have installed it with apt-get, maybe like this:
+
+#+BEGIN_SRC sh
+sudo apt-get install python-software-properties
+sudo add-apt-repository ppa:git-core/ppa
+sudo apt-get update
+sudo apt-get install git
+#+END_SRC
+
+Or maybe you downloaded this repo direct without git clone.  That's fine too.
+But you should still probably get git.
+
+** emacs
+
+Having Emacs installed will make it easier to run installation from this file.
+
+*** deps
+
+Emacs dependencies in Debian.
+
+#+BEGIN_SRC sh
+sudo apt-get install build-essential \
+texinfo         libx11-dev       libxpm-dev   libjpeg-dev   \
+libpng12-dev    libgif-dev       libtiff5-dev libgtk2.0-dev \
+libncurses5-dev libxpm-dev       automake     autoconf      \
+libxml2-dev     libfreetype6-dev libav-tools  emacs-goodies-el
+#+END_SRC
+
+*** build
+
+This is an outdated version of Emacs!
+How do you express this as "latest version please"?
+
+#+BEGIN_SRC sh
+sudo apt-get install curl
+cd /home/gloftus/tmp
+curl -O http://gnu.askapache.com/emacs/emacs-26.2.tar.gz
+tar xzf emacs-26.2.tar.gz
+cd emacs-26.2
+./configure
+make
+sudo make install
+#+END_SRC
+
+* install script header
+
+Creating a system-install.org file early in the process seems useful.
+Especially if there are notes or learnings to be captured from the install itself.
+
+#+begin_export ascii
+#+TITLE: system-install.org
+#+AUTHOR: Greg Loftus
+#+LAST_UPDATED: ???
+
+
+ * system details
+
+Machine Name:
+Operating System:
+Install date:
+Last update:
+
+dpkg-current: 01
+
+ * notes on the install
+ * hardware issues
+ * after the fact
+
+?
+
+#+end_export
+
+* system utilities
+     
+#+BEGIN_SRC sh 
+sudo apt-get install openbox
+sudo apt-get install terminator
+sudo apt-get remove vim-tiny vim-common
+sudo apt-get install vim
+
+sudo apt-get install vlc mencoder arandr
+sudo apt-get install curl jq httpie nmap htop tree
+sudo apt-get install openssh-server autossh gparted gmrun virtualbox
+# openssh-client typically already installed
+ssh-keygen -t rsa
+ssh-copy-id $REMOTE
+
+sudo apt-get install linux-tools-common linux-tools-generic
+sudo apt-get install linux-tools-$(uname -r)
+
+sudo apt-get install ubuntu-restricted-extras
+#+END_SRC
+
+*** CPU Sensors
+
+sudo apt-get install lm-sensors
+sudo sensors-detect
+sudo service kmod start (OPTIONAL)
+type sensors to see cpu temps
+
+*** VirtualBox
+
+install of 2019-04:
+
+download .deb from https://www.virtualbox.org/wiki/Linux_Downloads
+
+ran following commands:
+
+> sudo dpkg -i virtualbox-6.0_6.0.8-130520~Debian~stretch_amd64.deb
+(ok)
+
+> virtualbox
+(throws errors)
+> sudo apt-get remove virtualbox
+(doesn't work)
+> sudo apt --fix-broken install
+(installs random qt shit, see below, but now it "works")
+> sudo /sbin/vboxconfig 
+(doesn't seem to do anything)
+
+> virtualbox 
+(can run and import vm but can't start vm, error about kernel modules)
+> sudo /sbin/rcvboxdrv start 
+(gave me actual names of headers to install!)
+> sudo apt-get install linux-headers-amd64 linux-headers-4.9.0.9-amd64 
+(yes!)
+> sudo /sbin/vboxconfig 
+(successfully built kernel modules, took a minute or two)
+
+> virtualbox 
+(works!)
+
+based on dpkg-05 the following new stuff is installed/updated with virtualbox:
+
+ii  virtualbox-6.0                        6.0.8-130520~Debian~stretch       amd64        Oracle VM VirtualBox
+ii  libqt5opengl5:amd64                   5.7.1+dfsg-3+deb9u1               amd64        Qt 5 OpenGL module
+ii  libqt5printsupport5:amd64             5.7.1+dfsg-3+deb9u1               amd64        Qt 5 print support module
+ii  linux-compiler-gcc-6-x86              4.9.168-1                         amd64        Compiler for Linux on x86 (meta-package)
+ii  linux-headers-4.9.0-9-amd64           4.9.168-1                         amd64        Header files for Linux 4.9.0-9-amd64
+ii  linux-headers-4.9.0-9-common          4.9.168-1                         all          Common header files for Linux 4.9.0-9
+ii  linux-headers-amd64                   4.9+80+deb9u7                     amd64        Header files for Linux amd64 configuration (meta-package)
+ii  linux-kbuild-4.9                      4.9.168-1                         amd64        Kbuild infrastructure for Linux 4.9
+ii  psmisc                                22.21-2.1+b2                      amd64        utilities that use the proc file system
+
+then did update and upgrade for dpkg-06, everything seems ok!
+
+older notes:
+
+had to enable VT-x and VT-d in BIOS settings
+grep vmx /proc/cpuinfo shows up (so we can virtualize)
+* programming languages
+** fortran and linear algebra
+
+How do you know if you need this stuff?
+
+#+BEGIN_SRC sh
+sudo apt-get install gfortran libgfortran3
+sudo apt-get install libblas3 libblas-dev libblas-doc libblas-test
+sudo apt-get install libopenblas-base libopenblas-dev
+sudo apt-get install liblapack3 liblapack-dev liblapack-test liblapack-doc liblapack-doc-man 
+sudo apt-get install libatlas3-base libatlas-base-dev libatlas-dev libatlas-test libatlas-doc
+#+END_SRC
+
+** python
+
+Here is how to install a generic python environment for scratch work.
+It's what you throw random packages into when you want to mess with python.
+
+Or you can just install Anaconda (recommended for scientific python).
+
+You never touch the system python install(s).
+
+Anything important gets developemt in a virtual environment, 
+ideally with it's own version of python, and maybe a container too.
+
+#+BEGIN_SRC sh
+sudo apt-get install python3-dev python3-tk tk-dev
+sudo apt-get install libssl-dev libffi-dev
+sudo apt-get -y install python3-pip # creates pip3 binary
+#+END_SRC
+
+*** anaconda3
+
+download from https://www.anaconda.com/distribution/#download-section
+
+sudo bash AnacondaInstaller... to /opt/anaconda3
+
+can you install non-root?
+
+** java
+
+> which java
+/usr/bin/java
+openjdk version "1.8.0_212"
+OpenJDK Runtime Environment (build 1.8.0_212-8u212-b01-1~deb9u1-b01)
+OpenJDK 64-Bit Server VM (build 25.212-b01, mixed mode)
+
+** javascript
+*** node and npm
+
+8.9.3 stable (lts)
+9.2.1 latest
+4.2.6 in ubuntu repository
+
+Q: What about npm?
+
+it does seem like you should avoid sudo npm at all costs
+for example, per [[https://medium.com/@ExplosionPills/dont-use-sudo-with-npm-still-66e609f5f92][this Medium article]] 
+but if I already ran sudo install nodejs does that mean npm is sudo?
+and an npm update to npm itself must be run as sudo?
+I didn't try it without for fear of data loss...
+
+#+BEGIN_SRC sh
+# node.js version 8, from nodesource PPA, includes npm as well :)
+curl -sL https://deb.nodesource.com/setup_8.x | sudo -E bash -
+sudo apt-get update
+sudo apt-get install -y nodejs
+
+sudo npm install -g npm # upgrade from 5.6.0 to 6.2.0
+#+END_SRC
+
+** php
+
+#+BEGIN_SRC sh
+sudo apt-get install php5 php5-common php5-cli php5-mysql php5-curl php-pear
+#+END_SRC
+
+** R and R Studio
+
+#+BEGIN_SRC sh
+sudo apt-get install r-base r-base-dev r-base-html r-doc-html r-doc-info r-doc-pdf
+#+END_SRC
+
+R-Studio requires libjpeg62 from above
+It complains if you have libjpeg 8 installed
+Can be fixed with "sudo apt-get install -f", which replaces 8 with 62 I guess?
+
+This installs tons of dev tools and libraries, including:
+ - gfortran
+ - libjpeg
+ - lapack, blas
+
+#+BEGIN_SRC sh
+wget https://download1.rstudio.org/rstudio-xenial-1.1.383-amd64.deb
+sudo dpkg -i rstudio-0.98.1062-amd64.deb
+sudo apt-get install -f
+#+END_SRC
+
+** elixer
+
+from https://elixir-lang.org/install.html#unix-and-unix-like
+and phoenix per https://hexdocs.pm/phoenix/installation.html
+
+#+BEGIN_SRC sh
+wget https://packages.erlang-solutions.com/erlang-solutions_1.0_all.deb && sudo dpkg -i erlang-solutions_1.0_all.deb
+sudo apt-get update
+sudo apt-get install esl-erlang
+sudo apt-get install elixir
+export PATH="$PATH:/usr/local/bin/elixir"
+mix local.hex
+mix archive.install https://github.com/phoenixframework/archives/raw/master/phx_new.ez
+#+END_SRC
+
+* web browsers
+** firefox
+** chrome
+
+vimium?
+
+already up to date: sudo apt-get install libxss1 libappindicator1 libindicator7
+
+alternate install from source: 
+wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub |      
+sudo      apt-key add -
+
+echo "deb http://dl.google.com/linux/chrome/deb/ stable main" | sudo tee 
+/etc/apt/sources.list.d/google-chrome.list
+sudo apt-get update
+sudo apt-get install google-chrome-stable
+
+#+BEGIN_SRC sh
+wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+sudo dpkg -i google-chrome*.deb
+#+END_SRC
+
+* publishing
+
+NOTE: sudo adduser gloftus lpadmin -> user is already a member of lpadmin
+NOTE: Installing LibreOffice will also install OpenJRE 6 (?)
+    
+#+BEGIN_SRC sh
+# already have texlive-latex-base and texlive-latex-base-recommended
+sudo apt-get install texlive texlive-base texlive-science texlive-math-extra 
+sudo apt-get install texlive-latex-extra texlive-xetex
+
+sudo apt-get install pandoc pdftk
+sudo apt-get install libreoffice libreoffice-gtk
+sudo apt-get install cups system-config-printer-gnome system-config-printer-common
+
+sudo apt-get install inkscape
+sudo apt-get install gimp gimp-data gimp-plugin-registry gimp-data-extras
+#+END_SRC
+
+* databases
+
+be sure to run mysql_secure_installation
+use "systemctl status mysql.service" to check status of mysqld
+what a great command, is that systemd ?
+also "sudo systemctl start mysql"
+also "sudo mysqladmin -uroot -p version" (or other commands)
+
+postgresql required for phoenix and elixir framework
+per [[https://stackoverflow.com/questions/35785892/ecto-postgres-install-error-password-authentication-failed][this link to SO]], I had to reset postgresql password:
+
+sudo -u postgres psql -c "ALTER USER postgres PASSWORD 'postgres';"
+sudo service postgresql restart
+
+#+BEGIN_SRC sh
+sudo apt-get install postgresql postgresql-client postgresql-doc pgadmin3 phppgadmin
+
+sudo apt-get install mysql-common mysql-client mysql-server mysql-workbench libmysqlclient-dev 
+sudo mysql_secure_installation
+#+END_SRC
+
+* customization and troubleshooting
+  
+This should be structured as generic help for systems.
+Individual issues go in the local system-install.org file created above.
+
+** audio
+
+no sound, no sound manager, no volume icon in tray
+alsamixer seems to think sound is being managed by Intel HDMI device
+
+sudo apt-get install pulseaudio pavucontrol
+
+in verdelet we fixed mute issue with: amixer -D pulse set Master 1+ unmute
+per: http://askubuntu.com/questions/118675/mute-key-mutes-alsa-and-pulseaudio-but-unmutes-only-alsa
+
+** desktop env
+*** lightlocker timeout hints
+    
+Menu vs command line:
+ - open /usr/share/applications in file browser
+ - right click properties of icons to see cli commands
+
+sudo nano /etc/xdg/lubuntu/lxdm/lxdm.conf
+ - changed numlock=0 to 1
+
+*** Menu vs command line:
+
+- open /usr/share/applications in file browser
+- right click properties of icons to see cli commands
+
+*** numlock default setting
+
+sudo nano /etc/xdg/lubuntu/lxdm/lxdm.conf
+- changed numlock=0 to 1
+
+*** Font size fix: (not relevant to shoftiel)
+    Add the following lines to the
+    'Section "Monitor"' section of /etc/X11/xorg.conf:
+    Option    "UseEdidDpi" "FALSE"
+    Option "DPI" "96x96"
+    Logout and back in to take effect.
+*** Font size fix (not done on oiqbok)
+    Add the following lines to the
+    'Section "Monitor"' section of /etc/X11/xorg.conf:
+    Option    "UseEdidDpi" "FALSE"
+    Option "DPI" "96x96"
+    Logout and back in to take effect.
+*** .Xresources font fix for i3
+
+not sure where I originally found this
+i3 has shitty font rendering for emacs and terminal
+adding this .Xresources file fixes it
+
+see https://wiki.manjaro.org/index.php?title=Improve_Font_Rendering for more details:
+
+nano ~/.Xresources
+
+Xft.dpi: 96
+Xft.antialias: true
+Xft.hinting: true
+Xft.rgba: rgb
+Xft.autohint: false
+Xft.hintstyle: hintslight
+Xft.lcdfilter: lcddefault
+
+*** xorg brightness button fix
+
+https://askubuntu.com/questions/715306/xbacklight-no-outputs-have-backlight-property-no-sys-class-backlight-folder
+
+Create the file xorg.conf:
+
+sudo nano /etc/X11/xorg.conf
+And add these lines:
+
+Section "Device"
+Identifier  "Card0"
+Driver      "intel"
+Option      "Backlight"  "NAME OF THE FOLDER"
+EndSection
+** tint2
+   panel_items = "TSC" <- remove "L" to kill launcher
+   change clock font from Free to Liberation
+   Had to change tint2 config file to make ID1 background color 100% opaque.
+** openbox
+
+shift-alt-right moves active window to desktop 2
+it should not do that, so we can use it for org mode instead
+
+*** replace A-F2 keybinding (around line 370 in lubuntu-rc.xml) with gmrun
+*** Map Ctrl-Window to move window to other screen
+     .config/openbox/lubuntu-rx.xml
+*** Modified "Send to Desktop" keybindings in rc.xml
+    to accomodate more org mode functionality.
+*** map window-maximize to Ctrl-Win-Up
+** battery and suspense
+
+Drains on closed lid?  Not suspending properly...
+
+In xfce-power-manager... Good luck!
+
+authentication on suspend bug
+https://askubuntu.com/questions/543921/authentication-required-before-suspend
+turned off "lock screen on screensaver" in power mgmt
+
+*** more
+
+from [2019-09-20 Fri]:
+
+to prevent laptop from shutting down on ac power:
+
+gconftool-2 -t string -s /apps/gnome-power-manager/buttons/lid_ac nothing
+
+from https://askubuntu.com/questions/15520/how-can-i-tell-ubuntu-to-do-nothing-when-i-close-my-laptop-lid
+
+just worked!  except didn't work when only desktop screen active
+
+tried editing /etc/Upower/Upower.conf IgnoreLid=true and service upower restart
+worked for 20 seconds then didnt'! ? ?
+
+still didn't work, but this did:
+
+https://askubuntu.com/questions/141866/keep-ubuntu-server-running-on-a-laptop-with-the-lid-closed/594417#594417
+
+To disable entering the sleep mode I had to edit the /etc/systemd/logind.conf file and modify the line:
+
+#HandleLidSwitch=suspend
+to
+
+HandleLidSwitch=ignore
+Then do
+
+sudo service systemd-logind restart
+
+and a HARD LOGOUT to set it in stone
+
+** printers
+
+download driver install tool from brother.com
+
+sudo ./linux-brprinter-installer-2.2.1-1 HL-L2350DW
+
+** SSD optimizations
+
+NO: OVER-PARTITIONING: boot to live CD, put 18GB free space (7%) on end of hard drive
+YES:  NOATIME: add noatime to /etc/fstab: UUID=128...b6    /home    ext4    noatime,defaults    0    2
+NO: TRIM: ubuntu 16.04 ships with weekly trim cron installed
+
+** laptop mode
+.config/lxsession/Lubuntu/desktop.conf
+and set laptop_mode=yes
+** apport
+
+per [[https://wiki.ubuntu.com/Apport][this Ubuntu wiki page]], apport is running but crash reporting is disabled by default.
+    
+Disable Apport:
+- sudo nano /etc/default/apport
+- (set enabled=0)
+      
+** grub help (for helptext?)
+   
+Boot without X by editing /etc/default/grub line:
+
+GRUB_CMDLINE_LINUX_DEFAULT="quiet splash"
+
+into 
+
+GRUB_CMDLINE_LINUX_DEFAULT="text"
+
+then run sudo update-grub
+
